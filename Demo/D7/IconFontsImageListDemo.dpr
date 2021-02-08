@@ -4,13 +4,12 @@ uses
   Forms,
   Themes,
   IconFontsImageListEditorUnit in '..\..\Packages\IconFontsImageListEditorUnit.pas' {IconFontsImageListEditor},
-  UMain in '..\Source\UMain.pas' {MainForm};
+  UMainOld in '..\Source\UMainOld.pas' {MainForm};
 
 {$R *.res}
 
 begin
   Application.Initialize;
-//  Application.MainFormOnTaskbar := True;
   Application.CreateForm(TMainForm, MainForm);
   Application.Run;
 

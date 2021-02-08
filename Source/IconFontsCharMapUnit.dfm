@@ -11,7 +11,7 @@ object IconFontsCharMapForm: TIconFontsCharMapForm
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
-  Font.Name = 'Tahoma'
+  Font.Name = 'Segoe UI'
   Font.Style = []
   KeyPreview = True
   OldCreateOrder = False
@@ -71,9 +71,9 @@ object IconFontsCharMapForm: TIconFontsCharMapForm
       OnChange = EditChangeUpdateGUI
     end
     object CopyToclipboardButton: TButton
-      Left = 582
+      Left = 579
       Top = 16
-      Width = 98
+      Width = 104
       Height = 30
       Action = CopyToCipboardAction
       Anchors = [akTop, akRight]
@@ -134,6 +134,17 @@ object IconFontsCharMapForm: TIconFontsCharMapForm
           Caption = 'Name'
           Transparent = True
         end
+        object IconNameLabel: TLabel
+          Left = 255
+          Top = 55
+          Width = 201
+          Height = 13
+          Anchors = [akLeft, akTop, akRight]
+          AutoSize = False
+          Caption = 'Icon Name (from metadata)'
+          Transparent = True
+          Visible = False
+        end
         object MainPanel: TPanel
           Left = 5
           Top = 18
@@ -146,14 +157,12 @@ object IconFontsCharMapForm: TIconFontsCharMapForm
           Ctl3D = False
           ParentCtl3D = False
           TabOrder = 0
-          object MainImage: TImage
+          object MainImage: TIconFontImage
             Left = 2
             Top = 2
             Width = 72
             Height = 72
             Align = alClient
-            Stretch = True
-            Transparent = True
           end
         end
         object FontIconHex: TEdit
@@ -163,8 +172,8 @@ object IconFontsCharMapForm: TIconFontsCharMapForm
           Height = 21
           Hint = 'Hexadecimal value'
           CharCase = ecUpperCase
-          Enabled = False
           MaxLength = 5
+          ReadOnly = True
           TabOrder = 2
         end
         object FontIconDec: TEdit
@@ -173,7 +182,7 @@ object IconFontsCharMapForm: TIconFontsCharMapForm
           Width = 80
           Height = 21
           Hint = 'Decimal value'
-          Enabled = False
+          ReadOnly = True
           TabOrder = 3
         end
         object DefaultFontName: TComboBox
@@ -187,24 +196,37 @@ object IconFontsCharMapForm: TIconFontsCharMapForm
           OnSelect = DefaultFontNameSelect
         end
         object cbShowSurrogate: TCheckBox
-          Left = 255
-          Top = 74
-          Width = 227
+          Left = 465
+          Top = 55
+          Width = 131
           Height = 17
-          Caption = 'Show "surrogate pairs" Icons (quite slow)'
-          TabOrder = 4
+          Anchors = [akTop, akRight]
+          Caption = 'Show "surrogate pairs"'
+          TabOrder = 5
           OnClick = cbShowSurrogateClick
         end
         object ShowCaptionsCheckBox: TCheckBox
-          Left = 488
+          Left = 465
           Top = 74
-          Width = 110
+          Width = 131
           Height = 17
+          Anchors = [akTop, akRight]
           Caption = 'Show captions'
           Checked = True
           State = cbChecked
-          TabOrder = 5
+          TabOrder = 6
           OnClick = ShowCaptionsCheckBoxClick
+        end
+        object IconName: TEdit
+          Left = 255
+          Top = 70
+          Width = 202
+          Height = 21
+          Hint = 'Icon Name (from metadata registered)'
+          Anchors = [akLeft, akTop, akRight]
+          ReadOnly = True
+          TabOrder = 4
+          Visible = False
         end
       end
     end

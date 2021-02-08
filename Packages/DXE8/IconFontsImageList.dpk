@@ -25,16 +25,22 @@ package IconFontsImageList;
 {$IMAGEBASE $400000}
 {$DEFINE RELEASE}
 {$ENDIF IMPLICITBUILDING}
-{$DESCRIPTION 'Ethea IconFontsImageList component'}
+{$DESCRIPTION 'Ethea IconFontsImageList VCL components'}
 {$LIBSUFFIX '_DXE8'}
 {$RUNONLY}
 {$IMPLICITBUILD OFF}
 
 requires
   rtl,
-  vcl;
+  vcl,
+  vclimg;
 
 contains
+  IconFontsImage in '..\..\Source\IconFontsImage.pas',
+  IconFontsImageListBase in '..\..\Source\IconFontsImageListBase.pas',
+  IconFontsItems in '..\..\Source\IconFontsItems.pas',
+  IconFontsVirtualImageList in '..\..\Source\IconFontsVirtualImageList.pas',
+  IconFontsImageCollection in '..\..\Source\IconFontsImageCollection.pas',
   IconFontsImageList in '..\..\Source\IconFontsImageList.pas',
   IconFontsUtils in '..\..\Source\IconFontsUtils.pas';
 

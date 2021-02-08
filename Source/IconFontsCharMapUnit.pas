@@ -3,7 +3,7 @@
 {       Icon Fonts ImageList: An extended ImageList for Delphi                 }
 {       to simplify use of Icons (resize, colors and more...)                  }
 {                                                                              }
-{       Copyright (c) 2019-2020 (Ethea S.r.l.)                                 }
+{       Copyright (c) 2019-2021 (Ethea S.r.l.)                                 }
 {       Contributors:                                                          }
 {         Carlo Barazzetta                                                     }
 {         Nicola Tambascia                                                     }
@@ -46,7 +46,13 @@ uses
   , ImgList
   , ExtDlgs
   , Spin
-  , IconFontsImageList, ActnList;
+  , IconFontsImageListBase
+  , IconFontsImageList
+  , ActnList
+  , IconFontsItems
+  , IconFontsImage
+  {$IFDEF DXE3+}, System.Actions{$ENDIF}
+  ;
 
 type
   TIconFontsCharMapForm = class(TForm)
@@ -64,7 +70,7 @@ type
     FontIconHexLabel: TLabel;
     FontIconDecLabel: TLabel;
     MainPanel: TPanel;
-    MainImage: TImage;
+    MainImage: TIconFontImage;
     FontIconHex: TEdit;
     FontIconDec: TEdit;
     DefaultFontName: TComboBox;
@@ -75,8 +81,9 @@ type
     ActionList: TActionList;
     CopyToCipboardAction: TAction;
     ShowCaptionsCheckBox: TCheckBox;
+    IconName: TEdit;
+    IconNameLabel: TLabel;
     procedure FormCreate(Sender: TObject);
-    procedure DeleteButtonClick(Sender: TObject);
     procedure AddButtonClick(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure HelpButtonClick(Sender: TObject);
@@ -104,6 +111,7 @@ type
     FFirstTime: Boolean;
     FMaxIcons: Integer;
     FFirstIcon: Integer;
+    FTotIcons: Integer;
     FIconsCount: Integer;
     FIconIndexLabel: string;
     FUpdating: Boolean;
@@ -111,26 +119,31 @@ type
     FIconFontItems: TIconFontItems;
     FImageListCaption: string;
     procedure DrawIconProgress(const ASender: TObject; const ACount: Integer;
-      const AItem: TIconFontItem; var AProceed: Boolean);
-    function AssignSource(AIconFontsImageList: TIconFontsImageList;
+      const AItem: TIconFontItem);
+    function AssignSource(AIconFontsImageList: TIconFontsImageListBase;
       const AFontName: TFontName = ''): Boolean;
     procedure AddNewItem;
-    procedure DeleteSelectedItem;
     procedure ClearAllImages;
     procedure UpdateGUI;
     procedure UpdateCharsToBuild;
-    function SelectedIconFont: TIconFontItem;
     function GetFontName: TFontName;
     procedure SetFontName(const Value: TFontName);
+    //Events for notification from item to imagelist
+    procedure CheckFontName(const AFontName: TFontName);
+    procedure OnItemChanged(Sender: TIconFontItem);
+    procedure GetOwnerAttributes(out AFontName: TFontName;
+      out AFontColor, AMaskColor: TColor);
+    procedure BuildList(Selected: Integer);
   public
+    function SelectedIconFont: TIconFontItem;
     constructor Create(AOwner: TComponent); override;
     constructor CreateForFont(AOwner: TComponent;
       const AFontName: TFontName; const ASize: Integer = 32;
-      const AFontColor: TColor = clNone; const AMaskColor: TColor = clNone); virtual;
+      const AFontColor: TColor = clDefault; const AMaskColor: TColor = clNone); virtual;
     constructor CreateForImageList(AOwner: TComponent;
-      AIconFontsImageList: TIconFontsImageList;
+      AIconFontsImageList: TIconFontsImageListBase;
       const AFontName: TFontName = ''); virtual;
-    procedure AssignImageList(const AIconFontsImageList: TIconFontsImageList;
+    procedure AssignImageList(const AIconFontsImageList: TIconFontsImageListBase;
       const AFontName: TFontName = '');
     property FontName: TFontName read GetFontName write SetFontName;
   end;
@@ -148,7 +161,11 @@ uses
   CommCtrl
   , TypInfo
   , ShellApi
-  , IconFontsUtils;
+  , IconFontsUtils
+  {$IFDEF D2010+}
+  , Icons.Utils
+  {$ENDIF}
+  ;
 
 const
   crColorPick = -100;
@@ -164,7 +181,7 @@ var
   IconFontsCharMapForm: TIconFontsCharMapForm;
 begin
   IconFontsCharMapForm := TIconFontsCharMapForm.CreateForFont(nil, AFontName,
-    24, AFontColor, AMaskColor);
+    ASize, AFontColor, AMaskColor);
   try
     if IconFontsCharMapForm.ShowModal = mrOk then
       Result := IconFontsCharMapForm.CharsEdit.Text
@@ -189,7 +206,7 @@ begin
   CharsEdit.Font.Size := 14;
   if DefaultFontName.Text <> '' then
   begin
-    CharsEdit.Font.Name := DefaultFontName.Text;
+    CharsEdit.Font.Name := FCharMapList.FontName;
     CharsEdit.Enabled := True;
   end
   else
@@ -204,23 +221,19 @@ var
   LIsItemSelected: Boolean;
   LItemFontName: TFontName;
   LIconFontItem: TIconFontItem;
-  {$IFNDEF DXE3+}
-  S: WideString;
-  {$ENDIF}
 begin
   FUpdating := True;
   try
     LIconFontItem := SelectedIconFont;
     LIsItemSelected := LIconFontItem <> nil;
     CopyToClipboardButton.Enabled := CharsEdit.Text <> '';
-    FontIconDec.Enabled := False;
-    FontIconHex.Enabled := False;
     if LIsItemSelected then
     begin
       ImageGroup.Caption := Format(FIconIndexLabel,[LIconFontItem.Index]);
       LItemFontName := LIconFontItem.FontName;
       FontIconDec.Text := IntToStr(LIconFontItem.FontIconDec);
       FontIconHex.Text := LIconFontItem.FontIconHex;
+      IconName.Text := LIconFontItem.IconName;
       MainPanel.Invalidate;
     end
     else
@@ -228,33 +241,10 @@ begin
       FontIconDec.Text := '0';
       FontIconHex.Text := '';
     end;
-    MainImage.Canvas.Brush.Color :=  MainPanel.Color;
-    MainImage.Canvas.FillRect(Rect(0, 0, MainImage.Height, MainImage.Height));
     if LIsItemSelected then
-    begin
-      if LIconFontItem.FontName <> '' then
-        MainImage.Canvas.Font.Name := LIconFontItem.FontName
-      else
-        MainImage.Canvas.Font.Name := FCharMapList.FontName;
-      MainImage.Canvas.Font.Height := MainImage.Height;
-      if LIconFontItem.FontColor <> clNone then
-        MainImage.Canvas.Font.Color := LIconFontItem.FontColor
-      else
-        MainImage.Canvas.Font.Color := FCharMapList.FontColor;
-      if LIconFontItem.MaskColor <> clNone then
-        MainImage.Canvas.Brush.Color := LIconFontItem.MaskColor
-      else
-        MainImage.Canvas.Brush.Color := FCharMapList.MaskColor;
-      MainImage.Canvas.FillRect(Rect(0, 0, MainImage.Height, MainImage.Height));
-      {$IFNDEF DXE3+}
-      S := LIconFontItem.Character;
-      TextOutW(MainImage.Canvas.Handle, 0, 0, PWideChar(S), 1);
-      {$ELSE}
-      MainImage.Canvas.TextOut(0, 0, LIconFontItem.Character);
-      {$ENDIF}
-    end;
-
-    //UpdateIconFontListViewCaptions(ImageView);
+      MainImage.ImageIndex := LIconFontItem.Index
+    else
+      MainImage.ImageIndex := -1;
   finally
     FUpdating := False;
   end;
@@ -269,18 +259,9 @@ begin
   end;
 end;
 
-procedure TIconFontsCharMapForm.DeleteSelectedItem;
-var
-  LIndex: Integer;
+procedure TIconFontsCharMapForm.CheckFontName(const AFontName: TFontName);
 begin
-  LIndex := ImageView.Selected.Index;
-  FCharMapList.Delete(LIndex);
-  UpdateIconFontListView(ImageView);
-  if LIndex < ImageView.Items.Count then
-    ImageView.ItemIndex := LIndex
-  else if ImageView.Items.Count > 0 then
-    ImageView.ItemIndex := LIndex-1;
-  UpdateGUI;
+  //Don't check anything
 end;
 
 procedure TIconFontsCharMapForm.ClearAllImages;
@@ -296,28 +277,24 @@ end;
 
 procedure TIconFontsCharMapForm.DrawIconProgress(const ASender: TObject;
   const ACount: Integer;
-  const AItem: TIconFontItem;
-  var AProceed: Boolean);
+  const AItem: TIconFontItem);
 var
   LPosition: Integer;
-  LListItem: TListItem;
+  LTotCount: Integer;
 begin
-  LPosition := Round((FMaxIcons-FFirstIcon)/(ACount)*AItem.Index/(FMaxIcons-FFirstIcon)*100);
+  LTotCount := (FMaxIcons-FFirstIcon);
+  if ACount <>0 then
+    FIconsCount := ACount
+  else
+    FIconsCount := FTotIcons+1;
+  LPosition := Round(FIconsCount*100 / LTotCount);
   if ProgressBar.Position <> LPosition then
   begin
     ProgressBar.Position := LPosition;
     Application.ProcessMessages;
-    AProceed := not FStopped;
+    if FStopped then
+      Abort;
   end;
-  LListItem := ImageView.Items.Add;
-  if ShowCaptionsCheckBox.Checked then
-  begin
-    LListItem.Caption := Format('%d%s$%s%s%s',
-      [AItem.FontIconDec,sLineBreak,
-       AItem.FontIconHex,sLineBreak,
-       AItem.IconName]);
-  end;
-  LListItem.ImageIndex := LListItem.Index;
 end;
 
 constructor TIconFontsCharMapForm.Create(AOwner: TComponent);
@@ -326,16 +303,17 @@ begin
   FCharMapList.OnDrawIcon := DrawIconProgress;
   FFirstTime := True;
   inherited;
+  MainImage.ImageList := FCharMapList;
 end;
 
 constructor TIconFontsCharMapForm.CreateForFont(AOwner: TComponent;
   const AFontName: TFontName; const ASize: Integer = 32;
-  const AFontColor: TColor = clNone; const AMaskColor: TColor = clNone);
+  const AFontColor: TColor = clDefault; const AMaskColor: TColor = clNone);
 begin
   Create(AOwner);
   FCharMapList.FontName := AFontName;
   FCharMapList.Size := ASize;
-  if AFontColor <> clNone then
+  if AFontColor <> clDefault then
     FCharMapList.FontColor := AFontColor
   else
     FCharMapList.FontColor := clWindowText;
@@ -345,7 +323,7 @@ begin
     FCharMapList.MaskColor := clBtnFace;
 end;
 
-function TIconFontsCharMapForm.AssignSource(AIconFontsImageList: TIconFontsImageList;
+function TIconFontsCharMapForm.AssignSource(AIconFontsImageList: TIconFontsImageListBase;
   const AFontName: TFontName = ''): Boolean;
 var
   LFontName: TFontName;
@@ -355,37 +333,34 @@ begin
     LFontName := AFontName
   else
     LFontName := AIconFontsImageList.FontName;
+  if LFontName = '' then
+    Exit;
   if FCharMapList.FontName <> LFontName then
   begin
-    ClearAllImages;
     FCharMapList.FontName := LFontName;
     Result := True;
   end;
   if FCharMapList.Size <> AIconFontsImageList.Size then
   begin
-    ClearAllImages;
     FCharMapList.Size := AIconFontsImageList.Size;
     Result := True;
   end;
   if FCharMapList.FontColor <> AIconFontsImageList.FontColor then
   begin
-    ClearAllImages;
     FCharMapList.FontColor := AIconFontsImageList.FontColor;
     Result := True;
   end;
   if FCharMapList.MaskColor <> AIconFontsImageList.MaskColor then
   begin
-    ClearAllImages;
     FCharMapList.MaskColor := AIconFontsImageList.MaskColor;
     Result := True;
   end;
-  if Result then
-    UpdateCharsToBuild;
+  ClearAllImages;
 end;
 
 constructor TIconFontsCharMapForm.CreateForImageList(
   AOwner: TComponent;
-  AIconFontsImageList: TIconFontsImageList;
+  AIconFontsImageList: TIconFontsImageListBase;
   const AFontName: TFontName = '');
 begin
   Create(AOwner);
@@ -431,6 +406,11 @@ begin
   end;
 end;
 
+procedure TIconFontsCharMapForm.OnItemChanged(Sender: TIconFontItem);
+begin
+  ;
+end;
+
 procedure TIconFontsCharMapForm.DefaultFontNameSelect(Sender: TObject);
 begin
   if FCharMapList.FontName <> DefaultFontName.Text then
@@ -441,11 +421,6 @@ begin
   end;
 end;
 
-procedure TIconFontsCharMapForm.DeleteButtonClick(Sender: TObject);
-begin
-  DeleteSelectedItem;
-end;
-
 procedure TIconFontsCharMapForm.FormClose(Sender: TObject;
   var Action: TCloseAction);
 begin
@@ -454,28 +429,20 @@ begin
 end;
 
 procedure TIconFontsCharMapForm.FormCreate(Sender: TObject);
-
-  procedure InitColorBox(AColorBox: TColorBox);
-  begin
-    {$IFDEF DXE3+}
-    AColorBox.Style := [cbStandardColors, cbExtendedColors, cbSystemColors,
-      cbIncludeNone, cbIncludeDefault, cbCustomColor, cbCustomColors, cbPrettyNames];
-    {$ENDIF}
-    AColorBox.Selected := clNone;
-  end;
-
 begin
-  {$IFDEF DXE3+}
+  {$IFDEF D2010+}
   cbShowSurrogate.Visible := True;
   {$ELSE}
   cbShowSurrogate.Visible := False;
   {$ENDIF}
   FImageListCaption := ImageListGroup.Caption;
+  ImageListGroup.Caption := '';
   ImageView.LargeImages := FCharMapList;
   ImageView.SmallImages := FCharMapList;
   Caption := Format(Caption, [IconFontsImageListVersion]);
   FUpdating := True;
-  FIconFontItems := TIconFontItems.Create(FCharMapList, TIconFontItem);
+  FIconFontItems := TIconFontItems.Create(FCharMapList, TIconFontItem,
+    OnItemChanged, CheckFontName, GetOwnerAttributes);
   DefaultFontName.Items := Screen.Fonts;
   FIconIndexLabel := ImageGroup.Caption;
 end;
@@ -498,7 +465,7 @@ end;
 procedure TIconFontsCharMapForm.FormShow(Sender: TObject);
 begin
   CharsEdit.Text := '';
-  if FFirstTime or FStopped then
+  if FFirstTime or FStopped or (ImageView.Items.Count = 0) then
   begin
     FStopped := False;
     FCharMapList.ClearIcons;
@@ -506,11 +473,21 @@ begin
     DefaultFontName.Text := '';
     FFirstTime := True;
   end;
+  if ImageView.CanFocus then
+    ImageView.SetFocus;
 end;
 
 function TIconFontsCharMapForm.GetFontName: TFontName;
 begin
   Result := DefaultFontName.Text;
+end;
+
+procedure TIconFontsCharMapForm.GetOwnerAttributes(out AFontName: TFontName;
+  out AFontColor, AMaskColor: TColor);
+begin
+  AFontName := FCharMapList.FontName;
+  AFontColor := FCharMapList.FontColor;
+  AMaskColor := FCharMapList.MaskColor;
 end;
 
 procedure TIconFontsCharMapForm.EditChangeUpdateGUI(Sender: TObject);
@@ -548,7 +525,7 @@ end;
 procedure TIconFontsCharMapForm.ActionListUpdate(Action: TBasicAction;
   var Handled: Boolean);
 begin
-  if FFirstTime then
+  if FFirstTime and Assigned(FCharMapList) then
   begin
     FFirstTime := False;
     FontName := FCharMapList.FontName;
@@ -571,12 +548,12 @@ begin
     LInsertIndex := ImageView.Items.Count;
   ImageView.Selected := nil;
   FCharMapList.IconFontItems.Insert(LInsertIndex);
-  UpdateIconFontListView(ImageView);
+  //UpdateIconFontListView(ImageView);
   ImageView.ItemIndex := LInsertIndex;
 end;
 
 procedure TIconFontsCharMapForm.AssignImageList(
-  const AIconFontsImageList: TIconFontsImageList;
+  const AIconFontsImageList: TIconFontsImageListBase;
   const AFontName: TFontName = '');
 begin
   if AssignSource(AIconFontsImageList, AFontName) then
@@ -600,6 +577,10 @@ end;
 procedure TIconFontsCharMapForm.BuildAllIcons(const ASurrogate: Boolean = False);
 var
   LStart, LEnd: Integer;
+  {$IFDEF D2010+}
+  LIconCollection: TIconCollection;
+  {$ENDIF}
+  LFontName: string;
 begin
   Screen.Cursor := crHourGlass;
   try
@@ -608,54 +589,133 @@ begin
     ImageView.Enabled := False;
     IconBuilderGroupBox.Enabled := False;
     FStopped := False;
+    LFontName := DefaultFontName.Text;
+
     if not ASurrogate then
     begin
-      //Clear
-      FIconsCount := 0;
-      CharsEdit.Text := '';
-      ImageListGroup.Caption := '';
-      ClearAllImages;
-      //Normal Chars
-      LStart := $0001;
-      LEnd := $FFFF;
-    end
-    else
-    begin
-      //Surrogate Pairs Chars
-      LStart := $F0000;
-      LEnd := $FFFFF;
+      {$IFDEF D2010+}
+      cbShowSurrogate.Visible := True;
+      {$ENDIF}
     end;
-    ImageView.Clear;
     if FCharMapList.Count > 0 then
-      FFirstIcon := FCharMapList.Count
+      FFirstIcon := FCharMapList.Count-1
     else
       FFirstIcon := -1;
-    FMaxIcons := LEnd - LStart;
-    ProgressBar.Position := 0;
-    FBuilding := True;
-    Try
-      ImageView.Items.BeginUpdate;
-      ProgressBar.Visible := True;
-      FIconsCount := FIconsCount + FCharMapList.AddIcons(
-        LStart, //From Chr
-        LEnd, //To Chr
-        DefaultFontName.Text,
-        FCharMapList.FontColor,
-        FCharMapList.MaskColor,
-        True);
-      UpdateCharsToBuild;
-      ImageListGroup.Caption := Format(FImageListCaption, [FIconsCount]);
-    Finally
-      ImageView.Items.EndUpdate;
-      FBuilding := False;
-      ProgressBar.Visible := False;
-    End;
-    ImageView.ItemIndex := FFirstIcon;
+    ImageView.Clear;
+
+    //Check for metadata font registered
+    {$IFDEF D2010+}
+    if TIconManager.Instance.FindCollection(LFontName, LIconCollection) then
+    begin
+      IconName.Visible := True;
+      IconNameLabel.Visible := True;
+      cbShowSurrogate.Visible := False;
+      ProgressBar.Position := 0;
+      FBuilding := True;
+      Try
+        //If metadata exists iterate to add icons into CharMap
+        ProgressBar.Visible := True;
+        ImageView.Items.BeginUpdate;
+        FMaxIcons := 0;
+        LIconCollection.ForEach(
+          function (const Entry: TIconEntry): Boolean
+          begin
+            Result := True;
+            Inc(FMaxIcons);
+          end);
+        FCharMapList.StopDrawing(True);
+        try
+          LIconCollection.ForEach(
+            function (const Entry: TIconEntry): Boolean
+            begin
+              Result := True;
+              FCharMapList.AddIcon(
+                Entry.codepoint,
+                Entry.name);
+              Inc(FTotIcons);
+            end);
+        finally
+          FCharMapList.StopDrawing(False);
+          FCharMapList.RecreateBitmaps;
+        end;
+      Finally
+        ImageView.Items.EndUpdate;
+        FBuilding := False;
+        ProgressBar.Visible := False;
+        ImageListGroup.Caption := Format(FImageListCaption, [FIconsCount]);
+        BuildList(FFirstIcon);
+      End;
+    end
+    else
+    {$ENDIF}
+    begin
+      IconName.Visible := False;
+      IconNameLabel.Visible := False;
+      if not ASurrogate then
+      begin
+        //Clear
+        FTotIcons := 0;
+        CharsEdit.Text := '';
+        ImageListGroup.Caption := '';
+        ClearAllImages;
+        //Normal Chars
+        LStart := $0001;
+        LEnd := $FFFF;
+      end
+      else
+      begin
+        //Surrogate Pairs Chars
+        LStart := $F0000;
+        LEnd := $FFFFF;
+      end;
+      FMaxIcons := LEnd - LStart;
+      ProgressBar.Position := 0;
+      FBuilding := True;
+      Try
+        ImageView.Items.BeginUpdate;
+        ProgressBar.Visible := True;
+        FTotIcons := FTotIcons + FCharMapList.AddIcons(
+          LStart, //From Chr
+          LEnd, //To Chr
+          LFontName,
+          FCharMapList.FontColor,
+          FCharMapList.MaskColor,
+          True);
+      Finally
+        ImageView.Items.EndUpdate;
+        FBuilding := False;
+        ProgressBar.Visible := False;
+        ImageListGroup.Caption := Format(FImageListCaption, [FIconsCount]);
+        BuildList(FFirstIcon);
+      End;
+    end;
   finally
     IconBuilderGroupBox.Enabled := True;
     ImageView.Enabled := True;
     paButtons.Enabled := True;
     paClient.Enabled := True;
+    Screen.Cursor := crDefault;
+  end;
+end;
+
+procedure TIconFontsCharMapForm.BuildList(Selected: Integer);
+begin
+  Screen.Cursor := crHourGlass;
+  try
+    UpdateIconFontListView(ImageView, '');
+
+    if Selected < -1 then
+      Selected := -1
+    else if (Selected = -1) and (ImageView.Items.Count > 0) then
+      Selected := 0
+    else if Selected >= ImageView.Items.Count then
+      Selected := ImageView.Items.Count - 1;
+
+    ImageView.ItemIndex := Selected;
+    if Self.Visible and (ImageView.ItemIndex >= 0) and ImageView.CanFocus then
+      ImageView.SetFocus;
+    UpdateCharsToBuild;
+  finally
     Screen.Cursor := crDefault;
   end;
 end;

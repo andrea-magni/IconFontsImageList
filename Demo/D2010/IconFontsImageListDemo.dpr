@@ -4,7 +4,9 @@ uses
   Forms,
   Themes,
   IconFontsImageListEditorUnit in '..\..\Packages\IconFontsImageListEditorUnit.pas' {IconFontsImageListEditor},
-  UMain in '..\Source\UMain.pas' {MainForm};
+  UMainOld in '..\Source\UMainOld.pas' {MainForm},
+  Icons.MaterialDesign in '..\..\Source\Fonts\Icons.MaterialDesign.pas',
+  Icons.Utils in '..\..\Source\Fonts\Icons.Utils.pas';
 
 {$R *.res}
 

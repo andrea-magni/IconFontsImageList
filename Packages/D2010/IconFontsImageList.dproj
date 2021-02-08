@@ -3,7 +3,7 @@
 			<ProjectGuid>{A19836F9-6599-47A1-994A-71C8DEDAC5E0}</ProjectGuid>
 			<MainSource>IconFontsImageList.dpk</MainSource>
 			<ProjectVersion>12.0</ProjectVersion>
-			<Config Condition="'$(Config)'==''">Debug</Config>
+			<Config Condition="'$(Config)'==''">Release</Config>
 			<DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
@@ -22,7 +22,7 @@
 		<PropertyGroup Condition="'$(Base)'!=''">
 			<DesignOnlyPackage>false</DesignOnlyPackage>
 			<DllSuffix>_D2010</DllSuffix>
-			<DCC_Description>Ethea IconFontsImageList component</DCC_Description>
+			<DCC_Description>Ethea IconFontsImageList VCL components</DCC_Description>
 			<RuntimeOnlyPackage>true</RuntimeOnlyPackage>
 			<DCC_DcuOutput>..\..\Lib\D2010\Win32\$(Config)</DCC_DcuOutput>
 			<DCC_UnitAlias>WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;$(DCC_UnitAlias)</DCC_UnitAlias>
@@ -48,6 +48,12 @@
 			</DelphiCompile>
 			<DCCReference Include="rtl.dcp"/>
 			<DCCReference Include="vcl.dcp"/>
+			<DCCReference Include="vclimg.dcp"/>
+			<DCCReference Include="..\..\Source\IconFontsImage.pas"/>
+			<DCCReference Include="..\..\Source\IconFontsImageListBase.pas"/>
+			<DCCReference Include="..\..\Source\IconFontsItems.pas"/>
+			<DCCReference Include="..\..\Source\IconFontsVirtualImageList.pas"/>
+			<DCCReference Include="..\..\Source\IconFontsImageCollection.pas"/>
 			<DCCReference Include="..\..\Source\IconFontsImageList.pas"/>
 			<DCCReference Include="..\..\Source\IconFontsUtils.pas"/>
 			<BuildConfiguration Include="Base">

@@ -15,9 +15,21 @@ object MainForm: TMainForm
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
+  ShowHint = True
   OnCreate = FormCreate
   PixelsPerInch = 96
   TextHeight = 13
+  object Splitter: TSplitter
+    Left = 626
+    Top = 38
+    Height = 509
+    Align = alRight
+    AutoSnap = False
+    MinSize = 80
+    ExplicitLeft = 9
+    ExplicitTop = 9
+    ExplicitHeight = 427
+  end
   object Panel1: TPanel
     Left = 0
     Top = 38
@@ -68,7 +80,7 @@ object MainForm: TMainForm
         TabOrder = 0
         Value = 100
       end
-      object AssignIconsButton: TBitBtn
+      object AssignIconsButton: TButton
         Left = 64
         Top = 36
         Width = 115
@@ -116,7 +128,7 @@ object MainForm: TMainForm
       Align = alBottom
       BevelOuter = bvNone
       TabOrder = 3
-      object ClearButton: TBitBtn
+      object ClearButton: TButton
         Left = 5
         Top = 5
         Width = 76
@@ -125,7 +137,7 @@ object MainForm: TMainForm
         TabOrder = 0
         OnClick = ClearButtonClick
       end
-      object ShowImageEditorButton: TBitBtn
+      object ShowImageEditorButton: TButton
         Left = 86
         Top = 5
         Width = 106
@@ -143,8 +155,8 @@ object MainForm: TMainForm
     Height = 38
     AutoSize = True
     ButtonHeight = 38
-    ButtonWidth = 39
-    Images = IconFontsImageList
+    ButtonWidth = 40
+    Images = IconFontsVirtualImageList
     TabOrder = 1
     object ToolButton1: TToolButton
       Left = 0
@@ -152,96 +164,121 @@ object MainForm: TMainForm
       Action = DisabledAction
     end
     object ToolButton2: TToolButton
-      Left = 39
+      Left = 40
       Top = 0
       Action = DeleteIconAction
     end
     object ToolButton3: TToolButton
-      Left = 78
+      Left = 80
       Top = 0
       ImageIndex = 2
     end
     object ToolButton4: TToolButton
-      Left = 117
+      Left = 120
       Top = 0
       ImageIndex = 3
     end
     object ToolButton5: TToolButton
-      Left = 156
+      Left = 160
       Top = 0
       ImageIndex = 4
     end
     object ToolButton6: TToolButton
-      Left = 195
+      Left = 200
       Top = 0
       Action = ChangeIconAction
     end
     object ToolButton7: TToolButton
-      Left = 234
+      Left = 240
       Top = 0
       Action = ChangeColorAction
       Enabled = False
     end
   end
-  object Panel2: TPanel
-    Left = 627
+  object paButtons: TPanel
+    Left = 629
     Top = 38
-    Width = 82
+    Width = 80
     Height = 509
     Align = alRight
     TabOrder = 2
-    object DeleteButton: TBitBtn
-      Left = 5
+    OnResize = paButtonsResize
+    object IconFontImage: TIconFontImage
+      Left = 1
+      Top = 430
+      Width = 78
+      Height = 78
+      Hint = 
+        'Click left - right mouse button to change icon into IconFontImag' +
+        'e'
+      ImageList = IconFontsVirtualImageList
+      ImageIndex = 0
+      Align = alBottom
+      OnMouseDown = IconFontImageMouseDown
+    end
+    object DeleteButton: TButton
+      Left = 2
       Top = 6
       Width = 73
       Height = 60
       Action = DeleteIconAction
-      Caption = 'Delete Icon'
-      Layout = blGlyphTop
+      ImageAlignment = iaTop
+      Images = IconFontsVirtualImageList
       TabOrder = 0
     end
-    object ChangeIconButton: TBitBtn
-      Left = 5
+    object ChangeIconButton: TButton
+      Left = 2
       Top = 71
       Width = 73
       Height = 60
       Action = ChangeIconAction
-      Caption = 'Change icon'
-      Layout = blGlyphTop
+      ImageAlignment = iaTop
+      Images = IconFontsVirtualImageList
       TabOrder = 1
     end
-    object ChangeColorButton: TBitBtn
-      Left = 6
+    object ChangeColorButton: TButton
+      Left = 3
       Top = 137
       Width = 73
       Height = 60
       Action = ChangeColorAction
-      Caption = 'Change Color'
-      Layout = blGlyphTop
+      ImageAlignment = iaTop
+      Images = IconFontsVirtualImageList
       TabOrder = 2
     end
-    object ShowCharMapButton: TBitBtn
-      Left = 6
+    object ShowCharMapButton: TButton
+      Left = 3
       Top = 201
       Width = 73
       Height = 60
       Action = ShowCharMapAction
       Caption = 'Char Map...'
-      Layout = blGlyphTop
+      ImageAlignment = iaTop
+      Images = IconFontsVirtualImageList
       TabOrder = 3
+    end
+    object NewFormButton: TButton
+      Left = 3
+      Top = 265
+      Width = 73
+      Height = 60
+      Action = NewFormAction
+      ImageAlignment = iaTop
+      Images = IconFontsVirtualImageList
+      TabOrder = 5
     end
   end
   object ClientPanel: TPanel
     Left = 201
     Top = 38
-    Width = 426
+    Width = 425
     Height = 509
     Align = alClient
     TabOrder = 3
     object ImageListLabel: TLabel
       Left = 1
       Top = 223
-      Width = 424
+      Width = 423
       Height = 13
       Align = alTop
       Alignment = taCenter
@@ -251,10 +288,10 @@ object MainForm: TMainForm
     object TreeView: TTreeView
       Left = 1
       Top = 1
-      Width = 424
+      Width = 423
       Height = 222
       Align = alTop
-      Images = IconFontsImageList
+      Images = IconFontsVirtualImageList
       Indent = 35
       TabOrder = 0
       Items.NodeData = {
@@ -271,66 +308,19 @@ object MainForm: TMainForm
     object ImageView: TListView
       Left = 1
       Top = 236
-      Width = 424
+      Width = 423
       Height = 272
       Align = alClient
       Columns = <>
       IconOptions.AutoArrange = True
-      LargeImages = IconFontsImageList
-      SmallImages = IconFontsImageList
+      LargeImages = IconFontsVirtualImageList
+      SmallImages = IconFontsVirtualImageList
       TabOrder = 1
+      OnSelectItem = ImageViewSelectItem
     end
   end
-  object IconFontsImageList: TIconFontsImageList
-    IconFontItems = <
-      item
-        FontIconDec = 983044
-        IconName = 'account'
-      end
-      item
-        FontIconDec = 983476
-        FontColor = clMaroon
-        IconName = 'delete'
-      end
-      item
-        FontIconDec = 983085
-        IconName = 'amazon'
-      end
-      item
-        FontIconDec = 983727
-        IconName = 'google-chrome'
-      end
-      item
-        FontIconDec = 983090
-        FontColor = clTeal
-        IconName = 'android'
-      end
-      item
-        FontIconDec = 985906
-        IconName = 'file-replace'
-      end
-      item
-        FontIconDec = 983062
-        IconName = 'account-search'
-      end
-      item
-        FontIconDec = 984024
-        IconName = 'palette'
-      end
-      item
-        FontIconDec = 984790
-        IconName = 'format-font'
-      end>
-    FontName = 'Material Design Icons Desktop'
-    FontColor = clBlack
-    MaskColor = clBtnFace
-    Size = 32
-    OnFontMissing = IconFontsImageListFontMissing
-    Left = 368
-    Top = 304
-  end
   object ActionList: TActionList
-    Images = IconFontsImageList
+    Images = IconFontsVirtualImageList
     Left = 288
     Top = 296
     object ChangeIconAction: TAction
@@ -364,9 +354,23 @@ object MainForm: TMainForm
       ImageIndex = 8
       OnExecute = ShowCharMapActionExecute
     end
+    object NewFormAction: TAction
+      Caption = 'New Form...'
+      ImageIndex = 9
+      OnExecute = NewFormActionExecute
+    end
   end
   object ColorDialog: TColorDialog
     Left = 496
     Top = 312
+  end
+  object IconFontsVirtualImageList: TIconFontsVirtualImageList
+    FontName = 'Material Design Icons Desktop'
+    FontColor = clBlack
+    MaskColor = clBtnFace
+    Size = 32
+    ImageCollection = dmImages.IconFontsImageCollection
+    Left = 368
+    Top = 384
   end
 end

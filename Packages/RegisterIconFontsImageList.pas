@@ -3,7 +3,7 @@
 {       Icon Fonts ImageList: An extended ImageList for Delphi                 }
 {       to simplify use of Icons (resize, colors and more...)                  }
 {                                                                              }
-{       Copyright (c) 2019-2020 (Ethea S.r.l.)                                 }
+{       Copyright (c) 2019-2021 (Ethea S.r.l.)                                 }
 {       Contributors:                                                          }
 {         Carlo Barazzetta                                                     }
 {                                                                              }
@@ -41,18 +41,24 @@ implementation
 
 uses
   IconFontsImageList
+  , IconFontsVirtualImageList
+  , IconFontsImageCollection
+  , IconFontsImage
   , IconFontsImageListEditor;
 
 procedure Register;
 begin
-  RegisterComponents('Ethea', [TIconFontsImageList
-(*
-  {$IFDEF D10_3+}
-  , TIconFontsImageCollection
-  {$ENDIF}
-*)
-  ]);
+  RegisterComponents('Ethea', [
+    TIconFontImage,
+    TIconFontsImageCollection,
+    TIconFontsVirtualImageList,
+    TIconFontsImageList]);
+
   RegisterComponentEditor(TIconFontsImageList, TIconFontsImageListCompEditor);
+  RegisterComponentEditor(TIconFontsVirtualImageList, TIconFontsImageListCompEditor);
+  RegisterComponentEditor(TIconFontsImageCollection, TIconFontsImageCollectionCompEditor);
+  RegisterPropertyEditor(TypeInfo(TIconFontsItems), TIconFontsImageList, 'IconFontItems', TIconFontsImageListProperty);
+  RegisterPropertyEditor(TypeInfo(TIconFontsItems), TIconFontsImageCollection, 'IconFontItems', TIconFontsCollectionListProperty);
 end;
 
 end.
